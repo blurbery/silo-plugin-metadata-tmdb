@@ -561,12 +561,13 @@ func (p *Provider) GetImages(ctx context.Context, req metadata.ImageRequest) ([]
 	if imgs != nil {
 		for _, img := range imgs.Posters {
 			out = append(out, metadata.RemoteImage{
-				URL:      img.FilePath,
-				Type:     metadata.ImagePoster,
-				Language: img.ISO639_1,
-				Width:    img.Width,
-				Height:   img.Height,
-				Rating:   img.VoteAverage,
+				URL:          img.FilePath,
+				Type:         metadata.ImagePoster,
+				Language:     img.ISO639_1,
+				Width:        img.Width,
+				Height:       img.Height,
+				Rating:       img.VoteAverage,
+				IncludesText: tmdbPosterIncludesText(img.ISO639_1),
 			})
 		}
 		for _, img := range imgs.Backdrops {
@@ -592,6 +593,11 @@ func (p *Provider) GetImages(ctx context.Context, req metadata.ImageRequest) ([]
 	}
 
 	return preferPrimaryImage(out, metadata.ImagePoster, primaryPosterPath, imageLanguage(lang)), nil
+}
+
+func tmdbPosterIncludesText(language string) *bool {
+	result := strings.TrimSpace(language) != ""
+	return &result
 }
 
 // ---------------------------------------------------------------------------

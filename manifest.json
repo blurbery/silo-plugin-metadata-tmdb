@@ -1,6 +1,6 @@
 {
   "plugin_id": "silo.tmdb",
-  "version": "1.2.21",
+  "version": "1.2.22",
   "checksum": "__CHECKSUM__",
   "silo_api_version": "v1",
   "presentation": {
