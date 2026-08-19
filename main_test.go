@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	"github.com/Silo-Server/silo-plugin-tmdb/metadata"
 	"github.com/Silo-Server/silo-plugin-tmdb/provider"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -28,6 +29,27 @@ func TestRuntimeServerConfigure_NoOp(t *testing.T) {
 	}
 	if p == nil {
 		t.Fatal("expected provider to be available")
+	}
+}
+
+func TestImageRecordMetadataIncludesArtworkTextSignal(t *testing.T) {
+	includesText := false
+	md := imageRecordMetadata(metadata.RemoteImage{
+		Rating:       8.5,
+		IncludesText: &includesText,
+	})
+	if md == nil {
+		t.Fatal("imageRecordMetadata() = nil")
+	}
+	if got := md.GetFields()["rating"].GetNumberValue(); got != 8.5 {
+		t.Fatalf("rating = %v, want 8.5", got)
+	}
+	includesTextField, ok := md.GetFields()["includes_text"]
+	if !ok {
+		t.Fatal("includes_text metadata is missing")
+	}
+	if includesTextField.GetBoolValue() {
+		t.Fatal("includes_text = true, want false")
 	}
 }
 
