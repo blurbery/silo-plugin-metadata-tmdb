@@ -257,7 +257,7 @@ func TestMetadataServerGetMetadata_IncludesReleaseDate(t *testing.T) {
 
 	resp, err := ms.GetMetadata(context.Background(), &pluginv1.GetMetadataRequest{
 		ProviderId: "123",
-		ItemType:   "series",
+		ItemType:   "movie",
 	})
 	if err != nil {
 		t.Fatalf("GetMetadata() error = %v", err)
@@ -379,7 +379,7 @@ func TestAssetRequestsFromProto_CarryProviderContext(t *testing.T) {
 	specials := int32(0)
 	imageReq := imageRequestFromProto(&pluginv1.GetImagesRequest{
 		ProviderId: "123",
-		ItemType:   "movie",
+		ItemType:   "series",
 		ProviderIds: mustStruct(t, map[string]any{
 			"imdb": "tt1234567",
 		}),
