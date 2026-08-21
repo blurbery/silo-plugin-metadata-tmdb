@@ -257,7 +257,7 @@ func TestMetadataServerGetMetadata_IncludesReleaseDate(t *testing.T) {
 
 	resp, err := ms.GetMetadata(context.Background(), &pluginv1.GetMetadataRequest{
 		ProviderId: "123",
-		ItemType:   "movie",
+		ItemType:   "series",
 	})
 	if err != nil {
 		t.Fatalf("GetMetadata() error = %v", err)
@@ -376,25 +376,33 @@ func TestMetadataRequestFromProto_CarriesContextFields(t *testing.T) {
 }
 
 func TestAssetRequestsFromProto_CarryProviderContext(t *testing.T) {
+	specials := int32(0)
 	imageReq := imageRequestFromProto(&pluginv1.GetImagesRequest{
 		ProviderId: "123",
 		ItemType:   "movie",
 		ProviderIds: mustStruct(t, map[string]any{
 			"imdb": "tt1234567",
 		}),
-		Language: "es",
+		Language:     "es",
+		SeasonNumber: &specials,
 	}, "tmdb")
-	if imageReq.ContentType != "movie" {
-		t.Fatalf("image ContentType = %q, want movie", imageReq.ContentType)
+	if imageReq.ContentType != "series" {
+		t.Fatalf("image ContentType = %q, want series", imageReq.ContentType)
 	}
 	if imageReq.Language != "es" {
 		t.Fatalf("image Language = %q, want es", imageReq.Language)
+	}
+	if imageReq.SeasonNumber == nil || *imageReq.SeasonNumber != 0 {
+		t.Fatalf("image SeasonNumber = %v, want present Specials value 0", imageReq.SeasonNumber)
 	}
 	if !reflect.DeepEqual(imageReq.ProviderIDs, map[string]string{
 		"tmdb": "123",
 		"imdb": "tt1234567",
 	}) {
 		t.Fatalf("image ProviderIDs = %#v", imageReq.ProviderIDs)
+	}
+	if got := imageRequestFromProto(&pluginv1.GetImagesRequest{}, "tmdb"); got.SeasonNumber != nil {
+		t.Fatalf("absent season number mapped as %v", got.SeasonNumber)
 	}
 
 	seasonsReq := seasonsRequestFromProto(&pluginv1.GetSeasonsRequest{

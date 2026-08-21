@@ -527,6 +527,64 @@ func TestGetImagesReturnsRawPaths(t *testing.T) {
 	}
 }
 
+func TestGetImagesReturnsExactSeasonGallery(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.URL.Path {
+		case "/configuration":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"images": map[string]any{"secure_base_url": serverURL(t, r) + "/images/"},
+			})
+		case "/tv/42/season/0/images":
+			if got := r.URL.Query().Get("language"); got != "fr" {
+				t.Fatalf("language = %q, want fr", got)
+			}
+			if got := r.URL.Query().Get("include_image_language"); got != "fr,en,null" {
+				t.Fatalf("include_image_language = %q, want fr,en,null", got)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"posters": []map[string]any{
+					{"file_path": "/specials-fr.jpg", "iso_639_1": "fr", "width": 2000, "height": 3000, "vote_average": 8.0},
+					{"file_path": "/specials-en.jpg", "iso_639_1": "en", "width": 2000, "height": 3000, "vote_average": 7.0},
+				},
+				"backdrops": []map[string]any{{"file_path": "/show-backdrop.jpg"}},
+				"logos":     []map[string]any{{"file_path": "/show-logo.png"}},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	specials := 0
+	images, err := newTMDBTestProvider(server.URL).GetImages(context.Background(), metadata.ImageRequest{
+		ProviderIDs:  map[string]string{"tmdb": "42"},
+		ContentType:  "series",
+		Language:     "fr",
+		SeasonNumber: &specials,
+	})
+	if err != nil {
+		t.Fatalf("GetImages() error = %v", err)
+	}
+	if len(images) != 2 {
+		t.Fatalf("images = %#v, want two season posters only", images)
+	}
+	for _, image := range images {
+		if image.Type != metadata.ImagePoster {
+			t.Fatalf("image type = %v, want poster", image.Type)
+		}
+		if image.SeasonNumber == nil || *image.SeasonNumber != 0 {
+			t.Fatalf("image SeasonNumber = %v, want present Specials value 0", image.SeasonNumber)
+		}
+	}
+	if images[0].URL != "/specials-fr.jpg" || images[1].URL != "/specials-en.jpg" {
+		t.Fatalf("images = %#v, want exact Specials gallery", images)
+	}
+}
+
 func TestGetImagesPrefersTMDBPrimaryPoster(t *testing.T) {
 	t.Parallel()
 
