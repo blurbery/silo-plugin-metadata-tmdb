@@ -522,8 +522,14 @@ func TestGetImagesReturnsRawPaths(t *testing.T) {
 	if got[metadata.ImageBackdrop].URL != "/backdrop.jpg" {
 		t.Fatalf("backdrop URL = %q", got[metadata.ImageBackdrop].URL)
 	}
+	if got[metadata.ImageBackdrop].IncludesText == nil || *got[metadata.ImageBackdrop].IncludesText {
+		t.Fatalf("backdrop IncludesText = %v, want false for language-neutral art", got[metadata.ImageBackdrop].IncludesText)
+	}
 	if got[metadata.ImageLogo].URL != "/logo.png" {
 		t.Fatalf("logo URL = %q", got[metadata.ImageLogo].URL)
+	}
+	if got[metadata.ImageLogo].IncludesText == nil || *got[metadata.ImageLogo].IncludesText {
+		t.Fatalf("logo IncludesText = %v, want false for language-neutral art", got[metadata.ImageLogo].IncludesText)
 	}
 }
 
@@ -582,6 +588,67 @@ func TestGetImagesReturnsExactSeasonGallery(t *testing.T) {
 	}
 	if images[0].URL != "/specials-fr.jpg" || images[1].URL != "/specials-en.jpg" {
 		t.Fatalf("images = %#v, want exact Specials gallery", images)
+	}
+}
+
+func TestGetImagesTreatsNoLanguageCodeAsTextless(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.URL.Path {
+		case "/configuration":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"images": map[string]any{
+					"secure_base_url": serverURL(t, r) + "/images/",
+				},
+			})
+		case "/movie/42":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id": 42,
+				"images": map[string]any{
+					"posters": []map[string]any{
+						{"file_path": "/poster-xx.jpg", "iso_639_1": "xx", "vote_average": 8.0},
+					},
+					"backdrops": []map[string]any{
+						{"file_path": "/backdrop-en.jpg", "iso_639_1": "en", "vote_average": 7.0},
+					},
+					"logos": []map[string]any{
+						{"file_path": "/logo-en.png", "iso_639_1": "en", "vote_average": 6.0},
+					},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	images, err := newTMDBTestProvider(server.URL).GetImages(context.Background(), metadata.ImageRequest{
+		ProviderIDs: map[string]string{"tmdb": "42"},
+		ContentType: "movie",
+	})
+	if err != nil {
+		t.Fatalf("GetImages() error = %v", err)
+	}
+
+	got := map[metadata.ImageType]metadata.RemoteImage{}
+	for _, img := range images {
+		got[img.Type] = img
+	}
+
+	poster := got[metadata.ImagePoster]
+	if poster.IncludesText == nil || *poster.IncludesText {
+		t.Fatalf("poster IncludesText = %v, want false for TMDB \"xx\" (No Language)", poster.IncludesText)
+	}
+	backdrop := got[metadata.ImageBackdrop]
+	if backdrop.IncludesText == nil || !*backdrop.IncludesText {
+		t.Fatalf("backdrop IncludesText = %v, want true for language-tagged art", backdrop.IncludesText)
+	}
+	logo := got[metadata.ImageLogo]
+	if logo.IncludesText == nil || !*logo.IncludesText {
+		t.Fatalf("logo IncludesText = %v, want true for language-tagged art", logo.IncludesText)
 	}
 }
 
@@ -778,6 +845,12 @@ func TestGetImagesAddsPrimaryPosterWhenImagesMissIt(t *testing.T) {
 	}
 	if primary.Language != "en" {
 		t.Fatalf("primary language = %q, want en", primary.Language)
+	}
+	if primary.IncludesText == nil || !*primary.IncludesText {
+		t.Fatalf("primary IncludesText = %v, want true for language-selected primary", primary.IncludesText)
+	}
+	if alt.IncludesText == nil || *alt.IncludesText {
+		t.Fatalf("alt IncludesText = %v, want false for language-neutral art", alt.IncludesText)
 	}
 	if primary.Rating <= alt.Rating {
 		t.Fatalf("primary rating = %v, alt rating = %v; want primary > alt", primary.Rating, alt.Rating)

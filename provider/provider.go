@@ -579,7 +579,7 @@ func (p *Provider) GetImages(ctx context.Context, req metadata.ImageRequest) ([]
 				Width:        img.Width,
 				Height:       img.Height,
 				Rating:       img.VoteAverage,
-				IncludesText: tmdbPosterIncludesText(img.ISO639_1),
+				IncludesText: tmdbImageIncludesText(img.ISO639_1),
 				SeasonNumber: scopedSeasonNumber,
 			})
 		}
@@ -588,12 +588,13 @@ func (p *Provider) GetImages(ctx context.Context, req metadata.ImageRequest) ([]
 				continue
 			}
 			out = append(out, metadata.RemoteImage{
-				URL:      img.FilePath,
-				Type:     metadata.ImageBackdrop,
-				Language: img.ISO639_1,
-				Width:    img.Width,
-				Height:   img.Height,
-				Rating:   img.VoteAverage,
+				URL:          img.FilePath,
+				Type:         metadata.ImageBackdrop,
+				Language:     img.ISO639_1,
+				Width:        img.Width,
+				Height:       img.Height,
+				Rating:       img.VoteAverage,
+				IncludesText: tmdbImageIncludesText(img.ISO639_1),
 			})
 		}
 		for _, img := range imgs.Logos {
@@ -601,12 +602,13 @@ func (p *Provider) GetImages(ctx context.Context, req metadata.ImageRequest) ([]
 				continue
 			}
 			out = append(out, metadata.RemoteImage{
-				URL:      img.FilePath,
-				Type:     metadata.ImageLogo,
-				Language: img.ISO639_1,
-				Width:    img.Width,
-				Height:   img.Height,
-				Rating:   img.VoteAverage,
+				URL:          img.FilePath,
+				Type:         metadata.ImageLogo,
+				Language:     img.ISO639_1,
+				Width:        img.Width,
+				Height:       img.Height,
+				Rating:       img.VoteAverage,
+				IncludesText: tmdbImageIncludesText(img.ISO639_1),
 			})
 		}
 	}
@@ -614,8 +616,15 @@ func (p *Provider) GetImages(ctx context.Context, req metadata.ImageRequest) ([]
 	return preferPrimaryImage(out, metadata.ImagePoster, primaryPosterPath, imageLanguage(lang)), nil
 }
 
-func tmdbPosterIncludesText(language string) *bool {
-	result := strings.TrimSpace(language) != ""
+// tmdbImageIncludesText derives text presence from TMDB's per-image language
+// tag: a language implies burned-in text, while a blank tag or TMDB's "xx"
+// (No Language) sentinel marks language-neutral art. It must be applied to the
+// raw iso_639_1 value before preferPrimaryImage backfills Language, so a
+// boosted textless primary keeps IncludesText=false alongside the fallback
+// language.
+func tmdbImageIncludesText(language string) *bool {
+	norm := imageLanguage(language)
+	result := norm != "" && norm != "xx"
 	return &result
 }
 
@@ -744,17 +753,22 @@ func preferPrimaryImage(
 
 	if primaryIdx >= 0 {
 		images[primaryIdx].Rating = bestRating + 1
+		// Display fallback only: IncludesText was already derived from the raw
+		// iso_639_1 tag and must not be recomputed from this backfilled value.
 		if images[primaryIdx].Language == "" && language != "" {
 			images[primaryIdx].Language = language
 		}
 		return images
 	}
 
+	// TMDB picks poster_path for the requested language, so text presence for
+	// this synthesized record follows the same language heuristic.
 	return append(images, metadata.RemoteImage{
-		URL:      primaryURL,
-		Type:     imageType,
-		Language: language,
-		Rating:   bestRating + 1,
+		URL:          primaryURL,
+		Type:         imageType,
+		Language:     language,
+		Rating:       bestRating + 1,
+		IncludesText: tmdbImageIncludesText(language),
 	})
 }
 

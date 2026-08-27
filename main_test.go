@@ -90,18 +90,23 @@ func TestResolveImageURL(t *testing.T) {
 		// poster variants
 		{name: "poster card", path: "tmdb://poster/poster.jpg", variant: "card", wantURL: "https://image.tmdb.org/t/p/w300/poster.jpg"},
 		{name: "poster featured", path: "tmdb://poster/poster.jpg", variant: "featured", wantURL: "https://image.tmdb.org/t/p/w500/poster.jpg"},
+		{name: "poster large", path: "tmdb://poster/poster.jpg", variant: "large", wantURL: "https://image.tmdb.org/t/p/w780/poster.jpg"},
 		{name: "poster full", path: "tmdb://poster/poster.jpg", variant: "full", wantURL: "https://image.tmdb.org/t/p/w780/poster.jpg"},
 		{name: "poster original", path: "tmdb://poster/poster.jpg", variant: "original", wantURL: "https://image.tmdb.org/t/p/original/poster.jpg"},
 		{name: "poster empty variant", path: "tmdb://poster/poster.jpg", variant: "", wantURL: "https://image.tmdb.org/t/p/original/poster.jpg"},
 		// backdrop variants
 		{name: "backdrop featured", path: "tmdb://backdrop/backdrop.jpg", variant: "featured", wantURL: "https://image.tmdb.org/t/p/w1280/backdrop.jpg"},
 		{name: "backdrop card", path: "tmdb://backdrop/backdrop.jpg", variant: "card", wantURL: "https://image.tmdb.org/t/p/w300/backdrop.jpg"},
+		{name: "backdrop large", path: "tmdb://backdrop/backdrop.jpg", variant: "large", wantURL: "https://image.tmdb.org/t/p/w1280/backdrop.jpg"},
 		// still variants
 		{name: "still card", path: "tmdb://still/still.jpg", variant: "card", wantURL: "https://image.tmdb.org/t/p/w300/still.jpg"},
+		{name: "still large", path: "tmdb://still/still.jpg", variant: "large", wantURL: "https://image.tmdb.org/t/p/original/still.jpg"},
 		// logo variants
 		{name: "logo featured", path: "tmdb://logo/logo.png", variant: "featured", wantURL: "https://image.tmdb.org/t/p/w500/logo.png"},
+		{name: "logo large", path: "tmdb://logo/logo.png", variant: "large", wantURL: "https://image.tmdb.org/t/p/w500/logo.png"},
 		// profile variants
 		{name: "profile card", path: "tmdb://profile/person.jpg", variant: "card", wantURL: "https://image.tmdb.org/t/p/w185/person.jpg"},
+		{name: "profile large", path: "tmdb://profile/person.jpg", variant: "large", wantURL: "https://image.tmdb.org/t/p/h632/person.jpg"},
 		// empty path
 		{name: "empty path", path: "", variant: "card", wantURL: ""},
 	}
