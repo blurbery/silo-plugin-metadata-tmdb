@@ -227,12 +227,12 @@ func (s *metadataServer) GetImages(ctx context.Context, req *pluginv1.GetImagesR
 			Language: img.Language,
 			Width:    int32(img.Width),
 			Height:   int32(img.Height),
+			Metadata: imageRecordMetadata(img),
 		}
 		if img.SeasonNumber != nil {
 			seasonNumber := int32(*img.SeasonNumber)
 			record.SeasonNumber = &seasonNumber
 		}
-		record.Metadata = imageRecordMetadata(img)
 		response.Images = append(response.Images, record)
 	}
 	return response, nil

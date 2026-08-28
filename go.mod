@@ -10,7 +10,7 @@ require (
 require google.golang.org/grpc v1.82.1 // indirect
 
 require (
-	github.com/Silo-Server/silo-plugin-sdk v0.13.2
+	github.com/Silo-Server/silo-plugin-sdk v0.15.0
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
@@ -24,5 +24,3 @@ require (
 	golang.org/x/text v0.36.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 )
-
-replace github.com/Silo-Server/silo-plugin-sdk => github.com/blurbery/silo-plugin-sdk v0.0.0-20260821084713-0029dbbc36be
