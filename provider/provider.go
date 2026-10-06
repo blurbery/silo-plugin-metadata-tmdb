@@ -514,7 +514,7 @@ func (p *Provider) getTVMetadata(ctx context.Context, id int, lang string) (*met
 	result.PosterPath = tv.PosterPath
 	result.BackdropPath = tv.BackdropPath
 
-	result.People = convertPeople(tv.Credits)
+	result.People = append(convertPeople(tv.Credits), creatorPeople(tv.CreatedBy)...)
 	result.Videos = convertVideos(tv.Videos)
 
 	return result, nil
@@ -797,6 +797,31 @@ func convertPeople(credits *Credits) []models.ItemPerson {
 				PhotoPath: tmdbProfileImageURL(cm.ProfilePath),
 			},
 			Kind: models.PersonKindFromJob(cm.Job),
+		})
+	}
+	return people
+}
+
+// creatorPeople credits a series' creators. TMDB lists them on the show
+// itself (created_by), not in its credits, so convertPeople never sees them.
+func creatorPeople(creators []Creator) []models.ItemPerson {
+	people := make([]models.ItemPerson, 0, len(creators))
+	for _, c := range creators {
+		name := strings.TrimSpace(c.Name)
+		if name == "" {
+			continue
+		}
+		person := models.Person{
+			Name:      name,
+			PhotoPath: tmdbProfileImageURL(c.ProfilePath),
+		}
+		if c.ID > 0 {
+			person.TmdbID = strconv.Itoa(c.ID)
+		}
+		people = append(people, models.ItemPerson{
+			Person:    person,
+			Kind:      models.PersonKindCreator,
+			SortOrder: len(people),
 		})
 	}
 	return people

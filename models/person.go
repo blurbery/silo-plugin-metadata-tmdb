@@ -15,6 +15,8 @@ const (
 	PersonKindProducer  PersonKind = 4
 	PersonKindGuestStar PersonKind = 5
 	PersonKindComposer  PersonKind = 6
+	// PersonKindCreator credits a series' creators. It matches Silo's value.
+	PersonKindCreator PersonKind = 9
 )
 
 // String returns the Jellyfin-compatible type string for this PersonKind.
@@ -32,6 +34,8 @@ func (k PersonKind) String() string {
 		return "GuestStar"
 	case PersonKindComposer:
 		return "Composer"
+	case PersonKindCreator:
+		return "Creator"
 	default:
 		return "Unknown"
 	}

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/Silo-Server/silo-plugin-tmdb/metadata"
+	"github.com/Silo-Server/silo-plugin-tmdb/models"
 )
 
 func TestTMDBLanguage(t *testing.T) {
@@ -1049,5 +1050,82 @@ func TestGetTVMetadataCarriesShowStatus(t *testing.T) {
 	}
 	if result.ShowStatus != "Returning Series" {
 		t.Fatalf("ShowStatus = %q, want %q", result.ShowStatus, "Returning Series")
+	}
+}
+
+func TestGetTVMetadataCreditsCreators(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.URL.Path {
+		case "/configuration":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"images": map[string]any{
+					"secure_base_url": serverURL(t, r) + "/images/",
+				},
+			})
+		case "/tv/1396":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":                1396,
+				"name":              "Breaking Bad",
+				"original_language": "en",
+				"created_by": []any{
+					map[string]any{"id": 66633, "name": "Vince Gilligan", "profile_path": "/vince.jpg"},
+					map[string]any{"id": 0, "name": " "},
+					map[string]any{"id": 0, "name": "Uncredited Creator"},
+				},
+				"genres":   []any{},
+				"networks": []any{},
+				"seasons":  []any{},
+				"credits": map[string]any{
+					"cast": []any{
+						map[string]any{"id": 17419, "name": "Bryan Cranston", "character": "Walter White", "order": 0},
+					},
+					"crew": []any{},
+				},
+				"external_ids": map[string]any{},
+				"images":       map[string]any{},
+				"content_ratings": map[string]any{
+					"results": []any{},
+				},
+			})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.String())
+		}
+	}))
+	defer server.Close()
+
+	p := newTMDBTestProvider(server.URL)
+	result, err := p.GetMetadata(context.Background(), metadata.MetadataRequest{
+		ProviderIDs: map[string]string{"tmdb": "1396"},
+		ContentType: "series",
+		Language:    "en",
+	})
+	if err != nil {
+		t.Fatalf("GetMetadata() error = %v", err)
+	}
+
+	var creators []models.ItemPerson
+	for _, person := range result.People {
+		if person.Kind == models.PersonKindCreator {
+			creators = append(creators, person)
+		}
+	}
+	if len(creators) != 2 {
+		t.Fatalf("creators = %+v, want 2 (the blank name skipped)", creators)
+	}
+	if got := creators[0]; got.Name != "Vince Gilligan" || got.TmdbID != "66633" || got.PhotoPath != "/vince.jpg" || got.SortOrder != 0 {
+		t.Errorf("first creator = %+v, want Vince Gilligan with TMDB ID 66633, photo /vince.jpg and sort order 0", got)
+	}
+	if got := creators[1]; got.Name != "Uncredited Creator" || got.TmdbID != "" || got.SortOrder != 1 {
+		t.Errorf("second creator = %+v, want no TMDB ID for ID 0 and sort order 1", got)
+	}
+	if got := models.PersonKindCreator.String(); got != "Creator" {
+		t.Errorf("PersonKindCreator.String() = %q, want %q", got, "Creator")
+	}
+	if len(result.People) != 3 || result.People[0].Kind != models.PersonKindActor {
+		t.Errorf("people = %+v, want the cast first, then the two creators", result.People)
 	}
 }
